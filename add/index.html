@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Grasso Tech Special Education Support Hub & Availability Calendar</title>
+
+<!-- Firebase compat SDKs (App, Firestore) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<script src="src/js.js"></script>
+<style>
+  :root {
+    --primary: #0047AB; /* Grasso Tech Royal Blue */
+    --primary-hover: #003380;
+    --bg-gray: #f4f6f9;
+    --border-color: #cccccc;
+    --text-main: #333333;
+    --alert-red: #d9534f;
+    --classroom-green: #0f9d58;
+    --classroom-hover: #0b8043;
+    
+    /* Capacity Colors */
+    --cap-green: #2e7d32;
+    --cap-yellow: #f57f17;
+    --cap-red: #c62828;
+    --cap-full: #616161;
+  }
+
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 15px;
+    color: var(--text-main);
+    background-color: #f9f9f9;
+  }
+
+  .portal-container {
+    max-width: 1150px;
+    margin: 0 auto;
+  }
+
+  /* Header */
+  .school-header {
+    text-align: center;
+    margin-bottom: 20px;
+    border-bottom: 3px solid var(--primary);
+    padding-bottom: 12px;
+    background: #fff;
+    padding-top: 15px;
+    border-radius: 6px 6px 0 0;
+  }
+
+  .school-header h2 {
+    color: var(--primary);
+    margin: 0 0 6px 0;
+    font-size: 26px;
+  }
+
+  .school-header p {
+    color: #555;
+    margin: 0;
+    font-weight: bold;
+    font-size: 14px;
+  }
+
+  /* Emergency Quick Action Banner */
+  .crisis-banner {
+    background: #fff0f0;
+    border: 2px solid var(--alert-red);
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .crisis-banner h4 {
+    margin: 0;
+    color: var(--alert-red);
+    font-size: 15px;
+  }
+
+  .crisis-banner p {
+    margin: 4px 0 0 0;
+    font-size: 12px;
+    color: #666;
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-block;
+    padding: 8px 14px;
+    background-color: var(--primary);
+    color: white !important;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 13px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+
+  .btn:hover { background-color: var(--primary-hover); }
+
+  .btn-danger { background-color: var(--alert-red); }
+  .btn-danger:hover { background-color: #c9302c; }
+
+  .btn-classroom { background-color: var(--classroom-green); }
+  .btn-classroom:hover { background-color: var(--classroom-hover); }
+
+  /* Navigation Tabs */
+  .nav-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 0;
+    background: #fff;
+    padding: 10px 10px 0 10px;
+    border-radius: 6px;
+  }
+
+  .tab-btn {
+    padding: 10px 16px;
+    background: #e9ecef;
+    border: 1px solid var(--border-color);
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    cursor: pointer;
+    font-weight: bold;
+    color: #555;
+    font-size: 13px;
+  }
+
+  .tab-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+  }
+
+  .tab-content {
+    display: none;
+    background: #fff;
+    padding: 20px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    margin-bottom: 25px;
+  }
+
+  .tab-content.active { display: block; }
+
+  /* Section Titles */
+  .section-title {
+    margin-top: 0;
+    color: var(--primary);
+    border-bottom: 2px solid var(--bg-gray);
+    padding-bottom: 8px;
+    font-size: 18px;
+  }
+
+  .sub-section-title {
+    margin-top: 25px;
+    margin-bottom: 10px;
+    color: #333;
+    font-size: 15px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 4px;
+  }
+
+  /* Tables */
+  table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 10px;
+    margin-bottom: 20px;
+  }
+
+  table.data-table th, table.data-table td {
+    border: 1px solid var(--border-color);
+    padding: 8px 12px;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  table.data-table th {
+    background-color: var(--bg-gray);
+    color: var(--primary);
+  }
+
+  /* Search Input */
+  .search-bar {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 13px;
+  }
+
+  /* Calendar Specific Styles */
+  #month-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    margin-bottom: 4px;
+    border-bottom: 1px solid #ddd;
+  }
+
+  #month-label {
+    flex-grow: 1;
+    font-size: 26px;
+    font-weight: 700;
+    text-align: center;
+    color: var(--primary);
+    margin: 0 20px;
+  }
+
+  table.cal-table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 5px;
+    table-layout: fixed;
+  }
+
+  table.cal-table th {
+    border: 1px solid #ccc;
+    padding: 6px;
+    text-align: left;
+    height: 36px;
+    background: #f0f0f0;
+    padding-left: 10px;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  table.cal-table td {
+    border: 1px solid #ccc;
+    padding: 4px 6px;
+    text-align: left;
+    vertical-align: top;
+    height: 140px;
+    box-sizing: border-box;
+    background: #fff;
+    cursor: pointer;
+  }
+
+  table.cal-table td:hover {
+    background: #fdfdfd;
+  }
+
+  .day-number {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.9rem;
+    color: var(--primary);
+  }
+
+  .request-list {
+    max-height: 105px;
+    overflow-y: auto;
+    padding-right: 2px;
+  }
+
+  .request-item {
+    font-size: 11px;
+    margin-bottom: 3px;
+    padding: 4px 6px;
+    border-radius: 4px;
+    color: #fff;
+    font-weight: bold;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  /* Capacity Indicators */
+  .status-green { background-color: var(--cap-green); }
+  .status-yellow { background-color: var(--cap-yellow); }
+  .status-red { background-color: var(--cap-red); }
+  .status-full { background-color: var(--cap-full); }
+
+  /* Legend Container */
+  .legend-bar {
+    display: flex;
+    gap: 15px;
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin-bottom: 12px;
+    font-size: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-box { width: 14px; height: 14px; border-radius: 3px; }
+
+  /* Classroom Hub Styles */
+  .classroom-card {
+    border: 1px solid var(--border-color);
+    border-left: 6px solid var(--classroom-green);
+    border-radius: 6px;
+    padding: 16px;
+    margin-bottom: 15px;
+    background: #fafafa;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .classroom-card h4 { margin: 0 0 5px 0; font-size: 16px; color: var(--classroom-green); }
+  .classroom-card p { margin: 0; font-size: 13px; color: #666; }
+
+  /* Modals */
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6);
+    justify-content: center;F
+    align-items: center;
+    z-index: 9999;
+  }
+
+  .modal-content {
+    background: white;
+    padding: 20px;
+    width: 380px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: 8px;
+  }
+
+  label { display: block; margin-top: 10px; font-weight: bold; font-size: 12px; }
+  select, input, textarea { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; }
+  .field-hint { font-size: 11px; color: #666; margin-top: 2px; display: block; }
+</style>
+</head>
+<body>
+
+<div class="portal-container">
+  
+  <!-- Header -->
+  <div class="school-header">
+    <h2>Grasso Technical High School</h2>
+    <p>Special Education & Support Services Resource Hub</p>
+  </div>
+
+  <!-- Emergency Protocol Banner -->
+  <div class="crisis-banner">
+    <div>
+      <h4>Crisis / De-escalation Protocol</h4>
+      <p>For urgent student behavior or sensory crisis needing immediate support.</p>
+    </div>
+    <div>
+      <button class="btn btn-danger" onclick="openCrisisModal()">View Crisis Protocol</button>
+    </div>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab(event, 'tab-calendar')">Availability Calendar</button>
+    <button class="tab-btn" onclick="switchTab(event, 'tab-matrix')">Accommodations Matrix</button>
+    <button class="tab-btn" onclick="switchTab(event, 'tab-directory')">Case Managers</button>
+    <button class="tab-btn" onclick="switchTab(event, 'tab-classroom')">Google Classroom</button>
+  </div>
+
+  <!-- TAB 1: SEPARATE SETTING AVAILABILITY CALENDAR -->
+  <div id="tab-calendar" class="tab-content active">
+    <h3 class="section-title">Separate Setting Availability Calendar</h3>
+
+    <!-- Legend Bar -->
+    <div class="legend-bar">
+      <strong>Capacity Legend:</strong>
+      <div class="legend-item"><div class="legend-box status-green"></div> 1–6 Students</div>
+      <div class="legend-item"><div class="legend-box status-yellow"></div> 7–10 Students (Limited)</div>
+      <div class="legend-item"><div class="legend-box status-red"></div> 11–13 Students (Near Full)</div>
+      <div class="legend-item"><div class="legend-box status-full"></div> 13+ Students (Cap Reached / Full)</div>
+    </div>
+
+    <div id="month-header">
+      <button class="btn" id="prev-month" onclick="changeMonth(-1)">&larr; Previous</button>
+      <h2 id="month-label"></h2>
+      <button class="btn" id="next-month" onclick="changeMonth(1)">Next &rarr;</button>
+    </div>
+
+    <table class="cal-table">
+      <thead>
+        <tr>
+          <th>Monday</th>
+          <th>Tuesday</th>
+          <th>Wednesday</th>
+          <th>Thursday</th>
+          <th>Friday</th>
+        </tr>
+      </thead>
+      <tbody id="calendar-body"></tbody>
+    </table>
+  </div>
+
+  <!-- TAB 2: ACCOMMODATIONS MATRIX -->
+  <div id="tab-matrix" class="tab-content">
+    <h3 class="section-title">CSDE IEP & 504 Supplementary Aids, Accommodations & Modifications</h3>
+    <p style="font-size: 12px; color: #666; margin-bottom: 12px;">
+      Reference based on Connecticut State Department of Education (CSDE) Bureau of Special Education Framework.
+    </p>
+
+    <input type="text" id="matrixSearch" class="search-bar" placeholder="Search strategy or accommodation (e.g., Extended Time, Visuals, Calculator, Fidget)..." onkeyup="filterMatrix()">
+    
+    <h4 class="sub-section-title">1. Accommodations</h4>
+    <table class="data-table search-target" id="matrixTable">
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>Accommodation Examples</th>
+          <th>Implementation Guidelines</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Presentation</strong></td>
+          <td>Large Print Text, Orally Read Tests/Directions, Highlighted or Color-Coded Texts, Pair Written and Oral Instruction, Repeat/Rephrase Instructions, Simplify Test Wording, Supplementary Visuals, Speech to Text Devices.</td>
+          <td>Provide alternative formats or visual supports to facilitate content understanding without altering performance expectations.</td>
+        </tr>
+        <tr>
+          <td><strong>Student Response</strong></td>
+          <td>Math Manipulatives, No Handwriting Penalty, Oral Testing, Speech to Text, Templates for Written Work, Use of Calculator, Word Prediction / Voice Recognition.</td>
+          <td>Allow alternative modes for students to express knowledge and complete coursework.</td>
+        </tr>
+        <tr>
+          <td><strong>Environment</strong></td>
+          <td>Adaptive Workspace, Clear Work Area, Preferential Seating, Reduction of Auditory/Visual Stimulation, Study Carrel, Use of Fidget Toys, Appropriate Lighting.</td>
+          <td>Adjust classroom layout or physical setup to optimize student focus and comfort.</td>
+        </tr>
+        <tr>
+          <td><strong>Time / Scheduling</strong></td>
+          <td>Break Between Tasks, Extra Time (Tests/Projects/Written Work/Assignments), Short Breaks Throughout the Day, Pace Long-Term Projects, Use Timer, Prior Notice of Tests.</td>
+          <td>Provide flexible scheduling or time extensions to manage processing speed and endurance.</td>
+        </tr>
+        <tr>
+          <td><strong>Organization</strong></td>
+          <td>Assignment Pad, Color-Coding, Daily Homework/Assignment Lists, Desktop List of Tasks, Electronic Organizers, Folders to Hold Work, Provide Agenda, Visual Schedule, Post Class Rules/Routines.</td>
+          <td>Structure tasks, schedules, and materials to assist with executive dysfunction.</td>
+        </tr>
+        <tr>
+          <td><strong>Behavioral Interventions</strong></td>
+          <td>Acknowledge Positive Work Frequently, Behavior Contracts, Cue Expected Behavior, De-escalation Strategies, Immediate Feedback, Peer Supports/Mentoring, Positive Reinforcement, Proximity Control.</td>
+          <td>Utilize proactive behavioral strategies and immediate reinforcement to maintain engagement.</td>
+        </tr>
+        <tr>
+          <td><strong>Instructional Strategies</strong></td>
+          <td>Check for Understanding, Concrete Examples, Extra Drill/Practice, Hands-on Projects, Multi-Sensory Approach, Pre-Teach Content, Provide Notes/Outlines, Vocabulary Word Banks.</td>
+          <td>Employ differentiated instructional techniques to support learning retention.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4 class="sub-section-title">2. Modifications</h4>
+    <table class="data-table search-target">
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>Modification Examples</th>
+          <th>Implementation Guidelines</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Content & Instruction</strong></td>
+          <td>Modified texts/reading material, Modified content for lessons/homework, Modified curriculum, Simplified Assignments.</td>
+          <td>Alter learning expectations or target goals to match the student's individualized capabilities.</td>
+        </tr>
+        <tr>
+          <td><strong>Performance Criteria</strong></td>
+          <td>Modified tests/assessments, Pass/Fail grading criteria, Audit Course options, Reduced answer choices.</td>
+          <td>Adjust assessment criteria, grading scales, or response requirements.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- TAB 3: CASE MANAGERS DIRECTORY -->
+  <div id="tab-directory" class="tab-content">
+    <h3 class="section-title">Special Education Staff & Case Manager Directory</h3>
+    <input type="text" id="directorySearch" class="search-bar" placeholder="Search case manager by name or email..." onkeyup="filterDirectory()">
+    <table class="data-table" id="directoryTable">
+      <thead>
+        <tr>
+          <th>Case Manager</th>
+          <th>Email Address</th>
+          <th>Contact Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Samuel Caramante</strong></td>
+          <td>samuel.caramante@cttech.org</td>
+          <td><a href="mailto:samuel.caramante@cttech.org" class="btn">Email Case Manager</a></td>
+        </tr>
+        <tr>
+          <td><strong>Rebecca Curtin</strong></td>
+          <td>rebecca.curtin@cttech.org</td>
+          <td><a href="mailto:rebecca.curtin@cttech.org" class="btn">Email Case Manager</a></td>
+        </tr>
+        <tr>
+          <td><strong>Kate Hespeler</strong></td>
+          <td>Kate.Hespeler@cttech.org</td>
+          <td><a href="mailto:Kate.Hespeler@cttech.org" class="btn">Email Case Manager</a></td>
+        </tr>
+        <tr>
+          <td><strong>Arthur Marrero</strong></td>
+          <td>arthur.marrero@cttech.org</td>
+          <td><a href="mailto:arthur.marrero@cttech.org" class="btn">Email Case Manager</a></td>
+        </tr>
+        <tr>
+          <td><strong>Steven Roy</strong></td>
+          <td>steven.roy@cttech.org</td>
+          <td><a href="mailto:steven.roy@cttech.org" class="btn">Email Case Manager</a></td>
+        </tr>
+        <tr>
+          <td><strong>Rachel Smith</strong></td>
+          <td>rachel.smith@cttech.org</td>
+          <td><a href="mailto:rachel.smith@cttech.org" class="btn">Email Case Manager</a></td>
+        </tr>
+        <tr>
+          <td><strong>Amber Stolz</strong></td>
+          <td>amber.stolz@cttech.org</td>
+          <td><a href="mailto:amber.stolz@cttech.org" class="btn">Email Case Manager</a></td>
+        </tr>
+        <tr>
+          <td><strong>Albert Tjardes</strong></td>
+          <td>Al.Tjardes@cttech.org</td>
+          <td><a href="mailto:Al.Tjardes@cttech.org" class="btn">Email Case Manager</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- TAB 4: GOOGLE CLASSROOM HUB -->
+  <div id="tab-classroom" class="tab-content">
+    <h3 class="section-title">Google Classroom Quick Access</h3>
+    <div class="classroom-card">
+      <div>
+        <h4>Google Classroom Main Dashboard</h4>
+        <p>View all enrolled and co-taught classes for Grasso Tech.</p>
+      </div>
+      <a href="https://classroom.google.com" target="_blank" rel="noopener noreferrer" class="btn btn-classroom">Open Google Classroom ↗</a>
+    </div>
+  </div>
+
+</div>
+
+<!-- CREATE REQUEST MODAL -->
+<div id="modal" class="modal">
+  <div class="modal-content">
+    <h3 id="modal-date" style="margin-top:0; color: var(--primary);"></h3>
+    <label for="teacher-name">Your Name / Teacher:</label>
+    <input type="text" id="teacher-name" placeholder="e.g. Mr. Smith" />
+    
+    <label for="period-select">Period:</label>
+    <select id="period-select" onchange="updateMaxStudents()"></select>
+
+    <label for="student-names">Student Name(s):</label>
+    <span class="field-hint">Include <strong>First & Last Name</strong> for each student (separated by commas if multiple).</span>
+    <textarea id="student-names" rows="2" placeholder="e.g. John Doe, Jane Smith" oninput="handleStudentNamesInput()"></textarea>
+
+    <label for="student-count">Number of students:</label>
+    <input type="number" id="student-count" min="1" max="13" value="1" onchange="updateMaxStudents()" />
+    <span id="seat-warning" style="font-size: 11px; color: var(--alert-red); display: block; margin-top: 2px;"></span>
+
+    <label for="notes">Notes / Subject:</label>
+    <textarea id="notes" rows="3"></textarea>
+    
+    <div style="text-align:right; margin-top:15px;">
+      <button class="btn" id="submit-btn" onclick="submitRequest()">Submit</button>
+      <button class="btn" style="background:#888;" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- CRISIS PROTOCOL MODAL -->
+<div id="crisis-modal" class="modal">
+  <div class="modal-content">
+    <h3 style="color: var(--alert-red); margin-top: 0;">Emergency De-escalation Protocol</h3>
+    <ol style="font-size: 13px; line-height: 1.6; padding-left: 20px;">
+      <li><strong>Maintain Safety:</strong> Clear immediate area if physical safety is compromised.</li>
+      <li><strong>Low-Arousal Approach:</strong> Use a calm tone, reduce verbal demands.</li>
+      <li><strong>Contact Crisis Team:</strong> Call Main Office (Ext. 0) or Learning Lab.</li>
+    </ol>
+    <div style="text-align: right; margin-top: 15px;">
+      <button class="btn" onclick="closeCrisisModal()">Close Protocol</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
